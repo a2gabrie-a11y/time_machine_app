@@ -21,8 +21,35 @@
       margin-bottom: 0;
     }
     .tagline {
-      font-size: 1.5rem;
+      font-size: 2.2rem;
       font-style: italic;
+      color: #FFD166;
+      text-shadow: 0 0 10px #FFD166, 0 0 25px #FF4FA3;
+      margin-top: 30px;
+      animation: pulse 1.2s ease-in-out infinite alternate;
+    }
+    @keyframes pulse {
+      from { opacity: 0.6; transform: scale(1); }
+      to   { opacity: 1;   transform: scale(1.05); }
+    }
+    #hourglass-box {
+      margin: 20px 0 40px;
+      color: #FFD166;
+      font-size: 1.5rem;
+      text-shadow: 0 0 10px #FFD166, 0 0 25px #FF4FA3;
+    }
+    #hourglass {
+      width: 120px;
+      filter: drop-shadow(0 0 8px #4FC3F7);
+    }
+    .glass-outline {
+      fill: none;
+      stroke: #4FC3F7;
+      stroke-width: 3;
+      stroke-linejoin: round;
+    }
+    .sand {
+      fill: #FFD166;
     }
     .stage {
       display: flex;
@@ -73,7 +100,7 @@
       display: none;
     }
     .dancer {
-      width: 180px;
+      width: 280px;
       animation: bounce 0.6s ease-in-out infinite alternate;
     }
     .dancer line, .dancer circle {
@@ -100,7 +127,6 @@
 </head>
 <body>
   <h1 id="site-title">TIME MACHINE</h1>
-  <p class="tagline">Dance like no one's watching</p>
 
   <div class="stage">
     <svg class="dancer pink" viewBox="0 0 100 160">
@@ -125,11 +151,58 @@
     </svg>
   </div>
 
+  <p class="tagline">Dance like no one's watching</p>
+
+  <div id="hourglass-box">
+    <svg id="hourglass" viewBox="0 0 100 170">
+      <defs>
+        <clipPath id="glass-shape">
+          <polygon points="15,10 85,10 55,85 85,160 15,160 45,85"/>
+        </clipPath>
+      </defs>
+      <g clip-path="url(#glass-shape)">
+        <rect id="sand-top" class="sand" x="0" y="15" width="100" height="65"/>
+        <rect id="sand-bottom" class="sand" x="0" y="160" width="100" height="0"/>
+      </g>
+      <polygon class="glass-outline" points="15,10 85,10 55,85 85,160 15,160 45,85"/>
+    </svg>
+    <p id="time-left">5:00</p>
+  </div>
+
   <script>
     const startBtn = document.getElementById("start-btn");
     const countdown = document.getElementById("countdown");
     const screen = document.getElementById("screen");
 
+    // The hourglass: sand falls over 5 minutes
+    function startHourglass() {
+      const total = 300; // 5 minutes in seconds
+      let secondsLeft = total;
+      const top = document.getElementById("sand-top");
+      const bottom = document.getElementById("sand-bottom");
+      const label = document.getElementById("time-left");
+
+      const sandTimer = setInterval(() => {
+        secondsLeft--;
+        const fallen = (total - secondsLeft) / total; // goes from 0 to 1
+
+        top.setAttribute("y", 15 + 65 * fallen);
+        top.setAttribute("height", 65 * (1 - fallen));
+        bottom.setAttribute("y", 160 - 70 * fallen);
+        bottom.setAttribute("height", 70 * fallen);
+
+        const min = Math.floor(secondsLeft / 60);
+        const sec = String(secondsLeft % 60).padStart(2, "0");
+        label.textContent = min + ":" + sec;
+
+        if (secondsLeft <= 0) {
+          clearInterval(sandTimer);
+          label.textContent = "Break's over! Back to work.";
+        }
+      }, 1000);
+    }
+
+    // The button: 3-2-1 countdown, then the video and the hourglass start
     startBtn.addEventListener("click", () => {
       startBtn.classList.add("hidden");
       countdown.classList.remove("hidden");
@@ -144,6 +217,7 @@
         } else {
           clearInterval(timer);
           screen.innerHTML = '<iframe src="https://www.youtube.com/embed/unfzfe8f9NI?autoplay=1" title="ABBA - Mamma Mia" referrerpolicy="strict-origin-when-cross-origin" allow="autoplay; encrypted-media" allowfullscreen></iframe>';
+          startHourglass();
         }
       }, 1000);
     });
