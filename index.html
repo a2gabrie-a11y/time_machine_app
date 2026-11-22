@@ -43,10 +43,10 @@
     .small-btn:hover { background: #4FC3F7; color: #000; }
 
     /* The breathing cool-down */
-    .breath-box { position: relative; z-index: 2; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 30px; }
-    .breath-circle { width: 160px; height: 160px; border-radius: 50%; border: 4px solid #4FC3F7; box-shadow: 0 0 25px #4FC3F7, inset 0 0 25px #FF4FA3; animation: breathe 4s ease-in-out infinite alternate; }
-    @keyframes breathe { from { transform: scale(0.6); } to { transform: scale(1.3); } }
-    .breath-text { font-size: 2.5rem; color: #FFD166; text-shadow: 0 0 10px #FFD166, 0 0 25px #FF4FA3; }
+    .breath-box { position: absolute; inset: 0; z-index: 2; display: flex; justify-content: center; align-items: center; }
+    .breath-circle { width: 200px; height: 200px; border-radius: 50%; border: 4px solid #4FC3F7; box-shadow: 0 0 25px #4FC3F7, inset 0 0 25px #FF4FA3; transform: scale(0.6); transition: transform 4s ease-in-out; }
+    .breath-circle.inhale { transform: scale(1.3); }
+    .breath-text { position: absolute; bottom: 6%; left: 0; right: 0; margin: 0; font-size: 2.5rem; color: #FFD166; text-shadow: 0 0 10px #FFD166, 0 0 25px #FF4FA3; }
   </style>
 </head>
 <body>
@@ -129,13 +129,14 @@
     let clockTimer;
     let legsTimer;
     let breathTimer;
-    let currentSongId = null;
+    let playedIds = [];      // songs already played this round
+    let breathingIn = false; // true while breathing in
 
     // The browser says a word in a low voice
-    function speak(word) {
+    function speak(word, rate = 0.9) {
       const voice = new SpeechSynthesisUtterance(word);
-      voice.pitch = 0.5; // 0 is lowest, 1 is normal, 2 is highest
-      voice.rate = 0.9;  // a little slower than normal
+      voice.pitch = 0.5;  // 0 is lowest, 1 is normal, 2 is highest
+      voice.rate = rate;  // 0.9 is a little slower than normal
       speechSynthesis.speak(voice);
     }
 
@@ -165,14 +166,20 @@
       }, 1000);
     }
 
-    // Time's up: everything stops and the rabbit sits
-    function endBreak() {
-      clearInterval(clockTimer);
+    // The rabbit stops in the middle and sits down
+    function sitRabbit() {
       clearInterval(legsTimer);
-      clearInterval(breathTimer);
-      rabbit.classList.remove("running"); // the rabbit stops in the middle
+      rabbit.classList.remove("running");
       leap.classList.add("hidden");
-      tuck.classList.remove("hidden");    // and sits down
+      tuck.classList.remove("hidden");
+    }
+
+    // Time's up: everything stops
+    function endBreak() {
+      secondsLeft = 0;
+      clearInterval(clockTimer);
+      clearInterval(breathTimer);
+      sitRabbit();
       controls.classList.add("hidden");
       label.textContent = "Break's over! Back to work.";
     }
@@ -183,17 +190,27 @@
       { title: "Fedde Le Grand ft. Ida Corr – Let Me Think About It", id: "7gkhE7t4KCE" },
       { title: "Daft Punk – Around the World", id: "K0HSD_i2DvA" },
       { title: "PSY – Gangnam Style", id: "9bZkp7q19f0" },
-      { title: "Stromae – Alors on danse", id: "gUbeQ7eb3nc" },
+      { title: "Stromae – Alors on danse", id: "VHoT4N43jK8" },
       { title: "Imael Angel feat. Cali Bee – Bad Times", id: "8C64lkuhnuU" },
       { title: "SAINt JHN – Roses (Imanbek Remix)", id: "2zToEPpFEN8" },
-      { title: "Kool & The Gang – Celebration", id: "3GwjfUFyY6M" }
+      { title: "Kool & The Gang – Celebration", id: "3GwjfUFyY6M" },
+      { title: "Alex Gaudino feat. Crystal Waters – Destination Calabria", id: "Kq4OtRsdXls" },
+      { title: "Money Play", id: "gLoN-u4kR90" }
     ];
 
-    // Pick a random song (never the same one twice in a row) and put it in the neon screen
+    // Pick a random song that hasn't played yet this round, and put it in the neon screen
     function playRandomSong() {
-      const choices = songs.filter(song => song.id !== currentSongId);
+      if (secondsLeft <= 0) return; // the break is over
+
+      let choices = songs.filter(song => !playedIds.includes(song.id));
+      if (choices.length === 0) {
+        // Every song has played: start a new round, but not with the last song
+        const lastId = playedIds[playedIds.length - 1];
+        playedIds = [];
+        choices = songs.filter(song => song.id !== lastId);
+      }
       const song = choices[Math.floor(Math.random() * choices.length)];
-      currentSongId = song.id;
+      playedIds.push(song.id);
 
       const frame = document.createElement("iframe");
       frame.src = "https://www.youtube.com/embed/" + song.id + "?autoplay=1";
@@ -204,8 +221,23 @@
       screen.replaceChildren(frame);
     }
 
-    // The cool-down: slow tunnel, breathing circle, slower rabbit, 2 minutes left
+    // One breath: the circle, the words and the voice all change together
+    function breathe(circle, words) {
+      breathingIn = !breathingIn;
+      if (breathingIn) {
+        circle.classList.add("inhale");
+        words.textContent = "Breathe in";
+        speak("Breathe in", 0.7);
+      } else {
+        circle.classList.remove("inhale");
+        words.textContent = "Breathe out";
+        speak("Breathe out", 0.7);
+      }
+    }
+
+    // The cool-down: slow tunnel, breathing circle, the rabbit rests, 2 minutes left
     function startCoolDown() {
+      if (secondsLeft <= 0) return; // the break is over
       controls.classList.add("hidden");
 
       // The tunnel clip plays slowly behind the breathing circle
@@ -222,25 +254,19 @@
       circle.className = "breath-circle";
       const words = document.createElement("p");
       words.className = "breath-text";
-      words.textContent = "Breathe in";
       box.append(circle, words);
 
       screen.replaceChildren(calmTunnel, box);
       calmTunnel.playbackRate = 0.5; // half speed, so it feels calm
       calmTunnel.play();
 
-      // The words follow the circle: 4 seconds in, 4 seconds out
-      breathTimer = setInterval(() => {
-        if (words.textContent === "Breathe in") {
-          words.textContent = "Breathe out";
-        } else {
-          words.textContent = "Breathe in";
-        }
-      }, 4000);
+      // 4 seconds in, 4 seconds out. The first breath starts right away.
+      breathingIn = false;
+      setTimeout(() => breathe(circle, words), 50);
+      breathTimer = setInterval(() => breathe(circle, words), 4000);
 
-      // The rabbit slows down to match
-      rabbit.style.animationDuration = "14s";
-      moveLegs(400);
+      // The rabbit rests too
+      sitRabbit();
 
       // The cool-down lasts 2 minutes
       if (secondsLeft > 120) {
