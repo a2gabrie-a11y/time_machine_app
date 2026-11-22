@@ -35,7 +35,18 @@
     #rabbit path, #rabbit circle { fill: none; stroke: #FFD166; stroke-width: 4; stroke-linejoin: round; stroke-linecap: round; filter: drop-shadow(0 0 6px #FFD166); }
     #rabbit.running { animation: run-across 6s linear infinite; }
     @keyframes run-across { from { left: -10%; } to { left: 110%; } }
-    #time-left { font-size: 1.5rem; color: #FFD166; text-shadow: 0 0 10px #FFD166; margin-bottom: 40px; }
+    #time-left { font-size: 1.5rem; color: #FFD166; text-shadow: 0 0 10px #FFD166; margin-bottom: 15px; }
+
+    /* The two small buttons under the timer */
+    #controls { display: flex; justify-content: center; gap: 20px; margin-bottom: 40px; }
+    .small-btn { font-family: Georgia, serif; font-size: 1rem; color: #4FC3F7; background: transparent; border: 2px solid #4FC3F7; border-radius: 30px; padding: 8px 22px; cursor: pointer; box-shadow: 0 0 10px #4FC3F7; }
+    .small-btn:hover { background: #4FC3F7; color: #000; }
+
+    /* The breathing cool-down */
+    .breath-box { position: relative; z-index: 2; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 30px; }
+    .breath-circle { width: 160px; height: 160px; border-radius: 50%; border: 4px solid #4FC3F7; box-shadow: 0 0 25px #4FC3F7, inset 0 0 25px #FF4FA3; animation: breathe 4s ease-in-out infinite alternate; }
+    @keyframes breathe { from { transform: scale(0.6); } to { transform: scale(1.3); } }
+    .breath-text { font-size: 2.5rem; color: #FFD166; text-shadow: 0 0 10px #FFD166, 0 0 25px #FF4FA3; }
   </style>
 </head>
 <body>
@@ -95,11 +106,30 @@
   </div>
   <p id="time-left">5:00</p>
 
+  <div id="controls" class="hidden">
+    <button id="more-btn" class="small-btn">One more song</button>
+    <button id="cool-btn" class="small-btn">Cool down</button>
+  </div>
+
   <script>
     const startBtn = document.getElementById("start-btn");
     const countdown = document.getElementById("countdown");
     const screen = document.getElementById("screen");
     const tunnel = document.getElementById("tunnel");
+    const controls = document.getElementById("controls");
+    const moreBtn = document.getElementById("more-btn");
+    const coolBtn = document.getElementById("cool-btn");
+    const rabbit = document.getElementById("rabbit");
+    const leap = document.getElementById("pose-leap");
+    const tuck = document.getElementById("pose-tuck");
+    const label = document.getElementById("time-left");
+
+    // These are shared by several functions, so they live out here
+    let secondsLeft = 300; // 5 minutes in seconds
+    let clockTimer;
+    let legsTimer;
+    let breathTimer;
+    let currentSongId = null;
 
     // The browser says a word in a low voice
     function speak(word) {
@@ -109,39 +139,42 @@
       speechSynthesis.speak(voice);
     }
 
-    // The rabbit runs laps for 5 minutes
-    function startRabbit() {
-      const total = 300; // 5 minutes in seconds
-      let secondsLeft = total;
-      const rabbit = document.getElementById("rabbit");
-      const leap = document.getElementById("pose-leap");
-      const tuck = document.getElementById("pose-tuck");
-      const label = document.getElementById("time-left");
-
-      rabbit.classList.add("running");
-
-      // Swap the two poses quickly so it looks like running
-      const legsTimer = setInterval(() => {
+    // Swap the rabbit's two poses so it looks like running
+    function moveLegs(speed) {
+      clearInterval(legsTimer);
+      legsTimer = setInterval(() => {
         leap.classList.toggle("hidden");
         tuck.classList.toggle("hidden");
-      }, 150);
+      }, speed);
+    }
 
-      // The clock
-      const clockTimer = setInterval(() => {
+    // The rabbit runs laps while the clock counts down
+    function startRabbit() {
+      rabbit.classList.add("running");
+      moveLegs(150);
+
+      clockTimer = setInterval(() => {
         secondsLeft--;
         const min = Math.floor(secondsLeft / 60);
         const sec = String(secondsLeft % 60).padStart(2, "0");
         label.textContent = min + ":" + sec;
 
         if (secondsLeft <= 0) {
-          clearInterval(clockTimer);
-          clearInterval(legsTimer);
-          rabbit.classList.remove("running"); // the rabbit stops in the middle
-          leap.classList.add("hidden");
-          tuck.classList.remove("hidden");    // and sits down
-          label.textContent = "Break's over! Back to work.";
+          endBreak();
         }
       }, 1000);
+    }
+
+    // Time's up: everything stops and the rabbit sits
+    function endBreak() {
+      clearInterval(clockTimer);
+      clearInterval(legsTimer);
+      clearInterval(breathTimer);
+      rabbit.classList.remove("running"); // the rabbit stops in the middle
+      leap.classList.add("hidden");
+      tuck.classList.remove("hidden");    // and sits down
+      controls.classList.add("hidden");
+      label.textContent = "Break's over! Back to work.";
     }
 
     // The DJ's crate: the app picks one of these at random
@@ -156,9 +189,12 @@
       { title: "Kool & The Gang – Celebration", id: "3GwjfUFyY6M" }
     ];
 
-    // Pick a random song and put its video in the neon screen
+    // Pick a random song (never the same one twice in a row) and put it in the neon screen
     function playRandomSong() {
-      const song = songs[Math.floor(Math.random() * songs.length)];
+      const choices = songs.filter(song => song.id !== currentSongId);
+      const song = choices[Math.floor(Math.random() * choices.length)];
+      currentSongId = song.id;
+
       const frame = document.createElement("iframe");
       frame.src = "https://www.youtube.com/embed/" + song.id + "?autoplay=1";
       frame.title = song.title;
@@ -168,31 +204,78 @@
       screen.replaceChildren(frame);
     }
 
+    // The cool-down: slow tunnel, breathing circle, slower rabbit, 2 minutes left
+    function startCoolDown() {
+      controls.classList.add("hidden");
+
+      // The tunnel clip plays slowly behind the breathing circle
+      const calmTunnel = document.createElement("video");
+      calmTunnel.id = "tunnel";
+      calmTunnel.src = "tunnel.mp4";
+      calmTunnel.muted = true;
+      calmTunnel.loop = true;
+      calmTunnel.playsInline = true;
+
+      const box = document.createElement("div");
+      box.className = "breath-box";
+      const circle = document.createElement("div");
+      circle.className = "breath-circle";
+      const words = document.createElement("p");
+      words.className = "breath-text";
+      words.textContent = "Breathe in";
+      box.append(circle, words);
+
+      screen.replaceChildren(calmTunnel, box);
+      calmTunnel.playbackRate = 0.5; // half speed, so it feels calm
+      calmTunnel.play();
+
+      // The words follow the circle: 4 seconds in, 4 seconds out
+      breathTimer = setInterval(() => {
+        if (words.textContent === "Breathe in") {
+          words.textContent = "Breathe out";
+        } else {
+          words.textContent = "Breathe in";
+        }
+      }, 4000);
+
+      // The rabbit slows down to match
+      rabbit.style.animationDuration = "14s";
+      moveLegs(400);
+
+      // The cool-down lasts 2 minutes
+      if (secondsLeft > 120) {
+        secondsLeft = 120;
+      }
+    }
+
     // The button: tunnel + "Ready, Set, Dance!", then the video and the rabbit start
-      startBtn.addEventListener("click", () => {
+    startBtn.addEventListener("click", () => {
       startBtn.classList.add("hidden");
       tunnel.classList.remove("hidden");
       tunnel.play();
       countdown.classList.remove("hidden");
 
-      const words = ["Ready", "Set", "Dance!"];
+      const steps = ["Ready", "Set", "Dance!"];
       let step = 0;
-      countdown.textContent = words[step];
-      speak(words[step]);
+      countdown.textContent = steps[step];
+      speak(steps[step]);
 
       const timer = setInterval(() => {
         step++;
-        if (step < words.length) {
-          countdown.textContent = words[step];
-          speak(words[step]);
+        if (step < steps.length) {
+          countdown.textContent = steps[step];
+          speak(steps[step]);
         } else {
           clearInterval(timer);
           playRandomSong();
           startRabbit();
+          controls.classList.remove("hidden");
         }
       }, 1100);
     });
+
+    moreBtn.addEventListener("click", playRandomSong);
+    coolBtn.addEventListener("click", startCoolDown);
   </script>
 </body>
 </html>
-
