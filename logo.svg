@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 480" width="400" height="480">
+  <!-- background -->
+  <rect width="400" height="480" fill="#1B1033"/>
+
+  <!-- top title -->
+  <text x="200" y="70" text-anchor="middle" font-family="Georgia, serif"
+        font-size="44" font-weight="bold" fill="#FFD166" letter-spacing="4">TIME MACHINE</text>
+
+  <!-- speaker cabinet -->
+  <rect x="110" y="100" width="180" height="270" rx="18" fill="#2E1F4D" stroke="#FF4F9A" stroke-width="5"/>
+
+  <!-- small tweeter -->
+  <circle cx="200" cy="160" r="30" fill="#140B26" stroke="#4FD1FF" stroke-width="4"/>
+  <circle cx="200" cy="160" r="10" fill="#4FD1FF"/>
+
+  <!-- big woofer -->
+  <circle cx="200" cy="280" r="65" fill="#140B26" stroke="#4FD1FF" stroke-width="5"/>
+  <circle cx="200" cy="280" r="40" fill="none" stroke="#FF4F9A" stroke-width="3"/>
+  <circle cx="200" cy="280" r="16" fill="#FF4F9A"/>
+
+  <!-- sound waves -->
+  <path d="M310 240 q20 40 0 80" fill="none" stroke="#FFD166" stroke-width="4" stroke-linecap="round"/>
+  <path d="M330 220 q32 60 0 120" fill="none" stroke="#FFD166" stroke-width="4" stroke-linecap="round" opacity="0.6"/>
+  <path d="M90 240 q-20 40 0 80" fill="none" stroke="#FFD166" stroke-width="4" stroke-linecap="round"/>
+  <path d="M70 220 q-32 60 0 120" fill="none" stroke="#FFD166" stroke-width="4" stroke-linecap="round" opacity="0.6"/>
+
+  <!-- tagline -->
+  <text x="200" y="425" text-anchor="middle" font-family="Georgia, serif"
+        font-size="28" font-style="italic" fill="#F4ECFF">Take a dance break</text>
+</svg>

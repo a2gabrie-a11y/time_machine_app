@@ -1,0 +1,53 @@
+<button id="start-btn">Start the 80s medley</button>
+<p id="now-playing"></p>
+
+<script>
+  const songs = [
+    { title: "Tears for Fears – Everybody Wants to Rule the World", url: "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/ed/23/1f/ed231f7c-78cb-3b4d-f312-fc6b7ec09063/mzaf_14579022326895349191.plus.aac.p.m4a" },
+    { title: "Survivor – Eye of the Tiger", url: "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/fe/fa/9e/fefa9edd-c023-4d1c-1012-08bfb0ec69e6/mzaf_4651653238471209843.plus.aac.p.m4a" },
+    { title: "Matthew Wilder – Break My Stride", url: "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/ec/c5/d9/ecc5d9a6-625f-2d50-f8d6-1ff783e42d16/mzaf_13867290896435807326.plus.aac.p.m4a" },
+    { title: "Journey – Don't Stop Believin'", url: "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/0f/e9/54/0fe95410-dc38-8696-0259-f61d869e9fca/mzaf_13616088119456591905.plus.aac.p.m4a" },
+    { title: "AC/DC – Back In Black", url: "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/08/2e/ac/082eac8c-1d0e-f72f-7b37-b8e037ff1579/mzaf_7587164327744022409.plus.aac.p.m4a" }
+  ];
+
+  const FADE_SECONDS = 3;
+
+  // Slide one song's volume from one level to another over 3 seconds
+  function fade(audio, from, to) {
+    const steps = 30;
+    let step = 0;
+    const timer = setInterval(() => {
+      step++;
+      audio.volume = from + (to - from) * (step / steps);
+      if (step >= steps) {
+        clearInterval(timer);
+        if (to === 0) audio.pause();
+      }
+    }, (FADE_SECONDS * 1000) / steps);
+  }
+
+  // Play song number n, and start the next one before it ends
+  function playSong(n) {
+    const label = document.getElementById("now-playing");
+    if (n >= songs.length) {
+      label.textContent = "Medley over! Back to work.";
+      return;
+    }
+    const audio = new Audio(songs[n].url);
+    audio.volume = 0;
+    audio.play();
+    fade(audio, 0, 1);
+    label.textContent = "Now playing: " + songs[n].title;
+
+    let nextStarted = false;
+    audio.addEventListener("timeupdate", () => {
+      if (!nextStarted && audio.duration && audio.currentTime > audio.duration - FADE_SECONDS) {
+        nextStarted = true;
+        fade(audio, 1, 0);
+        playSong(n + 1);
+      }
+    });
+  }
+
+  document.getElementById("start-btn").addEventListener("click", () => playSong(0));
+</script>
