@@ -1,53 +1,87 @@
-<button id="start-btn">Start the 80s medley</button>
-<p id="now-playing"></p>
-
-<script>
-  const songs = [
-    { title: "Tears for Fears – Everybody Wants to Rule the World", url: "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/ed/23/1f/ed231f7c-78cb-3b4d-f312-fc6b7ec09063/mzaf_14579022326895349191.plus.aac.p.m4a" },
-    { title: "Survivor – Eye of the Tiger", url: "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/fe/fa/9e/fefa9edd-c023-4d1c-1012-08bfb0ec69e6/mzaf_4651653238471209843.plus.aac.p.m4a" },
-    { title: "Matthew Wilder – Break My Stride", url: "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/ec/c5/d9/ecc5d9a6-625f-2d50-f8d6-1ff783e42d16/mzaf_13867290896435807326.plus.aac.p.m4a" },
-    { title: "Journey – Don't Stop Believin'", url: "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/0f/e9/54/0fe95410-dc38-8696-0259-f61d869e9fca/mzaf_13616088119456591905.plus.aac.p.m4a" },
-    { title: "AC/DC – Back In Black", url: "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/08/2e/ac/082eac8c-1d0e-f72f-7b37-b8e037ff1579/mzaf_7587164327744022409.plus.aac.p.m4a" }
-  ];
-
-  const FADE_SECONDS = 3;
-
-  // Slide one song's volume from one level to another over 3 seconds
-  function fade(audio, from, to) {
-    const steps = 30;
-    let step = 0;
-    const timer = setInterval(() => {
-      step++;
-      audio.volume = from + (to - from) * (step / steps);
-      if (step >= steps) {
-        clearInterval(timer);
-        if (to === 0) audio.pause();
-      }
-    }, (FADE_SECONDS * 1000) / steps);
-  }
-
-  // Play song number n, and start the next one before it ends
-  function playSong(n) {
-    const label = document.getElementById("now-playing");
-    if (n >= songs.length) {
-      label.textContent = "Medley over! Back to work.";
-      return;
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Time Machine: Dance Break</title>
+  <style>
+    body {
+      background: #000;
+      color: #fff;
+      font-family: Georgia, serif;
+      text-align: center;
+      margin: 0;
+      padding-top: 30px;
     }
-    const audio = new Audio(songs[n].url);
-    audio.volume = 0;
-    audio.play();
-    fade(audio, 0, 1);
-    label.textContent = "Now playing: " + songs[n].title;
+    h1 {
+      color: #FFD166;
+      text-shadow: 0 0 10px #FFD166, 0 0 25px #FF4FA3;
+      letter-spacing: 4px;
+    }
+    .stage {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 30px;
+      flex-wrap: wrap;
+    }
+    iframe {
+      border: 4px solid #FF4FA3;
+      border-radius: 12px;
+      box-shadow: 0 0 20px #FF4FA3, 0 0 40px #4FC3F7;
+      max-width: 90vw;
+    }
+    .dancer {
+      width: 100px;
+      animation: bounce 0.6s ease-in-out infinite alternate;
+    }
+    .dancer line, .dancer circle {
+      stroke-width: 6;
+      stroke-linecap: round;
+      fill: none;
+    }
+    .pink line, .pink circle { stroke: #FF4FA3; filter: drop-shadow(0 0 6px #FF4FA3); }
+    .blue line, .blue circle { stroke: #4FC3F7; filter: drop-shadow(0 0 6px #4FC3F7); }
+    .blue { animation-delay: 0.3s; }
+    .arm {
+      transform-origin: 50px 55px;
+      animation: wave 0.6s ease-in-out infinite alternate;
+    }
+    @keyframes bounce {
+      from { transform: translateY(0) rotate(-6deg); }
+      to   { transform: translateY(-15px) rotate(6deg); }
+    }
+    @keyframes wave {
+      from { transform: rotate(-25deg); }
+      to   { transform: rotate(25deg); }
+    }
+  </style>
+</head>
+<body>
+  <h1>TIME MACHINE</h1>
+  <p>Take a dance break</p>
 
-    let nextStarted = false;
-    audio.addEventListener("timeupdate", () => {
-      if (!nextStarted && audio.duration && audio.currentTime > audio.duration - FADE_SECONDS) {
-        nextStarted = true;
-        fade(audio, 1, 0);
-        playSong(n + 1);
-      }
-    });
-  }
+  <div class="stage">
+    <svg class="dancer pink" viewBox="0 0 100 160">
+      <circle cx="50" cy="25" r="15"/>
+      <line x1="50" y1="40" x2="50" y2="100"/>
+      <g class="arm"><line x1="50" y1="55" x2="15" y2="35"/><line x1="50" y1="55" x2="85" y2="35"/></g>
+      <line x1="50" y1="100" x2="25" y2="150"/>
+      <line x1="50" y1="100" x2="75" y2="150"/>
+    </svg>
 
-  document.getElementById("start-btn").addEventListener("click", () => playSong(0));
-</script>
+    <iframe width="560" height="315"
+      src="https://www.youtube.com/embed/unfzfe8f9NI"
+      title="ABBA - Mamma Mia"
+      allow="autoplay; encrypted-media" allowfullscreen></iframe>
+
+    <svg class="dancer blue" viewBox="0 0 100 160">
+      <circle cx="50" cy="25" r="15"/>
+      <line x1="50" y1="40" x2="50" y2="100"/>
+      <g class="arm"><line x1="50" y1="55" x2="15" y2="35"/><line x1="50" y1="55" x2="85" y2="35"/></g>
+      <line x1="50" y1="100" x2="25" y2="150"/>
+      <line x1="50" y1="100" x2="75" y2="150"/>
+    </svg>
+  </div>
+</body>
+</html>
